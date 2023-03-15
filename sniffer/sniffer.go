@@ -35,34 +35,32 @@ var maing mainProcess
 var db *geoip2.Reader
 var db2 *geoip2.Reader
 
-var DB_ContryFileS = "./databases/GeoLite2-Country.mmdb"
-var DB_ASNFileS = "./databases/GeoLite2-ASN.mmdb"
-
-// loadASNFile load the ASN database file
 func loadASNFile() string {
-	DB_ASNFile := DB_ASNFileS
+	DB_ASNFile := "./databases/GeoLite2-ASN.mmdb"
 	if len(os.Getenv("DB_GEOLITE_ASN")) > 0 {
 		DB_ASNFile = os.Getenv("DB_GEOLITE_ASN")
 	}
-
 	return DB_ASNFile
 }
 
-// loadContryFile load the country database file
-func loadContryFile() string {
-	DB_ContryFile := DB_ContryFileS
-	if len(os.Getenv("DB_GEOLITE_CONTRY")) > 0 {
-		DB_ContryFile = os.Getenv("DB_GEOLITE_CONTRY")
+func loadCountryFile() string {
+	DB_ContryFile := "./databases/GeoLite2-Country.mmdb"
+	if len(os.Getenv("DB_GEOLITE_COUNTRY")) > 0 {
+		DB_ContryFile = os.Getenv("DB_GEOLITE_COUNTRY")
 	}
 	return DB_ContryFile
 }
 
 func Sniff(network_interface string, mainp mainProcess) {
-	CacheInit(false)
+	if os.Getenv("CACHEREDIS") != "" {
+		CacheInit(true)
+	} else {
+		CacheInit(false)
+	}
 
 	maing = mainp
 
-	dbi, err := geoip2.Open(loadContryFile())
+	dbi, err := geoip2.Open(loadCountryFile())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,7 +76,7 @@ func Sniff(network_interface string, mainp mainProcess) {
 	db2 = db2i
 	defer db2i.Close()
 
-	handle, err := pcap.OpenLive(os.Args[1], 65536, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive(network_interface, 65536, true, pcap.BlockForever)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -190,30 +188,4 @@ func processIP(ip net.IP, port int) *GoniffAddress {
 	}
 
 	return &addr
-}
-
-func isPrivateIP(ip net.IP) bool {
-	privateBlocks := []string{
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-		"169.254.0.0/16",
-		"127.0.0.0/8",
-	}
-	for _, block := range privateBlocks {
-		_, privateBlock, _ := net.ParseCIDR(block)
-		if privateBlock.Contains(ip) {
-			return true
-		}
-	}
-	return false
-}
-
-func resolveDNSName(ip net.IP) string {
-	names, err := net.LookupAddr(ip.String())
-	if err != nil {
-		//fmt.Printf("Error: %s\n", err);
-		return ""
-	}
-	return names[0]
 }

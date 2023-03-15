@@ -13,7 +13,7 @@
       "mode": "auto",
       "program": "${workspaceRoot}/main.go",
       "env": {},
-      "args": ["eno1"],
+      "args": [],
       "asRoot": true,
       "console": "integratedTerminal",
   }

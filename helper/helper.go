@@ -2,30 +2,47 @@ package helper
 
 import (
 	"fmt"
-	"log"
 	"net"
-
-	"github.com/joho/godotenv"
 )
 
-// PrintInterfaces list all network interfaces
-func PrintInterfaces() {
-
-	infs, _ := net.Interfaces()
-
-	for _, f := range infs {
-
-		fmt.Println(f.Name)
-
+func FindInterface() string {
+	conn, err := net.Dial("tcp", "google.com:80")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return ""
 	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.TCPAddr)
+	interfaceName, err := getInterfaceName(localAddr.IP)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return ""
+	}
+
+	return interfaceName
 }
 
-// LoadENVFile loads a.env file
-func LoadENVFile() {
-	// load .env file
-	err := godotenv.Load(".env")
-
+func getInterfaceName(ip net.IP) (string, error) {
+	ifaces, err := net.Interfaces()
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		return "", err
 	}
+
+	for _, iface := range ifaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+		}
+
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok {
+				if ipnet.Contains(ip) {
+					return iface.Name, nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("could not determine internet interface")
 }

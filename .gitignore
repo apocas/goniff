@@ -20,3 +20,4 @@ scripts/updateDB
 databases/*.mmdb
 goniff
 bin/*
+.env

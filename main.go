@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	"apocas/goniff/helper"
 	"apocas/goniff/sniffer"
+
+	"github.com/joho/godotenv"
 )
 
 func process(packet sniffer.GoniffPacket) {
@@ -14,21 +15,23 @@ func process(packet sniffer.GoniffPacket) {
 }
 
 func init() {
-	helper.LoadENVFile()
+	godotenv.Load(".env")
 }
 
 func main() {
+	var network_interface = ""
 
 	if len(os.Args) < 2 {
-		fmt.Println("No interface was supplied, please select on of the list below: \n")
+		fmt.Println("Trying to find suitable interface...")
+		network_interface = helper.FindInterface()
 
-		if runtime.GOOS == "linux" {
-			helper.PrintInterfaces()
+		if network_interface == "" {
+			fmt.Println("Usage interface as ARG, EX: goniff eth0")
+			os.Exit(0)
 		}
-
-		fmt.Println("\n Usage interface as ARG, EX: goniff eth0 \n")
-		os.Exit(0)
+	} else {
+		network_interface = os.Args[1]
 	}
 
-	sniffer.Sniff(os.Args[1], process)
+	sniffer.Sniff(network_interface, process)
 }
