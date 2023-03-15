@@ -60,21 +60,11 @@ func Sniff(network_interface string, mainp mainProcess) {
 
 	maing = mainp
 
-	dbi, err := geoip2.Open(loadCountryFile())
-	if err != nil {
-		log.Fatal(err)
-	}
+	db, _ = geoip2.Open(loadCountryFile())
+	defer db.Close()
 
-	db = dbi
-	defer dbi.Close()
-
-	db2i, err := geoip2.Open(loadASNFile())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db2 = db2i
-	defer db2i.Close()
+	db2, _ = geoip2.Open(loadASNFile())
+	defer db2.Close()
 
 	handle, err := pcap.OpenLive(network_interface, 65536, true, pcap.BlockForever)
 	if err != nil {
@@ -112,7 +102,7 @@ func Sniff(network_interface string, mainp mainProcess) {
 	}
 }
 
-func lookupDB(db *geoip2.Reader, ip net.IP) map[string]string {
+func lookupDB(ip net.IP) map[string]string {
 	output := map[string]string{
 		"country": "",
 	}
@@ -171,7 +161,7 @@ func processIP(ip net.IP, port int) *GoniffAddress {
 
 		if addr.country == "" {
 			populate = true
-			cachedp := lookupDB(db, ip)
+			cachedp := lookupDB(ip)
 			addr.country = cachedp["country"]
 			addr.ASN = cachedp["ASN"]
 			addr.ORG = cachedp["ORG"]
