@@ -21,3 +21,5 @@ databases/*.mmdb
 goniff
 bin/*
 .env
+
+.DS_Store
